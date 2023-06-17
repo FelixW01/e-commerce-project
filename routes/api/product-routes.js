@@ -7,15 +7,20 @@ const {
 } = require('../../models');
 
 // The `/api/products` endpoint
-
 // get all products
 router.get('/', async (req, res) => {
   try {
     const productData = await Product.findAll({
       include: [{
-        model: Category,
-        Tag,
-      }]
+          model: Tag,
+          attributes: ['id', 'tag_name'],
+          through: 'ProductTag',
+        },
+        {
+          model: Category,
+          attributes: ['id', 'category_name']
+        }
+      ]
     })
     res.status(200).json(productData);
   } catch (err) {
@@ -29,11 +34,12 @@ router.get('/:id', async (req, res) => {
     const productData = await Product.findByPk(req.params.id, {
       include: [{
           model: Tag,
-          through: product_tag,
-          as: 'product_tags'
+          attributes: ['id', 'tag_name'],
+          through: 'ProductTag',
         },
         {
-          model: Category
+          model: Category,
+          attributes: ['id', 'category_name'],
         }
       ]
     });
