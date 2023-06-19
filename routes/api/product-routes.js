@@ -33,13 +33,13 @@ router.get('/:id', async (req, res) => {
   try {
     const productData = await Product.findByPk(req.params.id, {
       include: [{
+          model: Category,
+          attributes: ['id', 'category_name']
+        },
+        {
           model: Tag,
           attributes: ['id', 'tag_name'],
           through: 'ProductTag',
-        },
-        {
-          model: Category,
-          attributes: ['id', 'category_name']
         }
       ]
     });
@@ -56,7 +56,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // create new product
-router.post('/', async (req, res) => {
+router.post('/', (req, res) => {
   /* req.body should look like this...
     {
       product_name: "Basketball",
@@ -65,28 +65,30 @@ router.post('/', async (req, res) => {
       tagIds: [1, 2, 3, 4]
     }
   */
-  try {
-    const createProduct = await Product.create({
+  Product.create({
       product_name: req.body.product_name,
       price: req.body.price,
       stock: req.body.stock,
       category_id: req.body.category_id,
       tagIds: req.body.tag_id
+    })
+    .then((product) => {
+      if (req.body.tagIds.length) {
+        const productTagIdArr = req.body.tagIds.map((tag_id) => {
+          return {
+            product_id: product.id,
+            tag_id,
+          }
+        })
+        return ProductTag.bulkCreate(productTagIdArr)
+      }
+      //if no product tags, respond.
+      res.status(200).json(createdProduct);
+    })
+    .then((productTagIds) => res.status(200).json(productTagIds))
+    .catch((err) => {
+      res.status(500).json(err)
     });
-    if (req.body.tagIds.length) {
-      const productTagIdArr = req.body.tagIds.map((tag_id) => {
-        return {
-          product_id: product.id,
-          tag_id,
-        }
-      })
-      return ProductTag.bulkCreate(productTagIdArr)
-    }
-    //if no product tags, respond.
-    res.status(200).json(createProduct);
-  } catch (err) {
-    res.status(500).json(err)
-  }
 });
 
 // update product
