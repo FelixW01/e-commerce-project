@@ -1,6 +1,6 @@
 # E-Commerce Back End
 
-https://github.com/FelixW01/E-Commerce-Back-End
+https://github.com/FelixW01/e-commerce-project
 
 # Description
 
