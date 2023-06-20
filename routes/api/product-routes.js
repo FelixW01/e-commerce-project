@@ -93,8 +93,63 @@ router.post('/', (req, res) => {
 
 // update product
 router.put('/:id', (req, res) => {
+  /*example
+  http: //localhost:3001/api/products/5
+  "product_name": "socks",
+	"price": 150.00,
+	"stock": 3,
+	"category_id": 3,
+	"tagIds": [1, 2, 3, 4]
+  */
   // update product data
-
+  Product.update(req.body, {
+      where: {
+        id: req.params.id,
+      },
+    })
+    .then((product) => {
+      return ProductTag.findAll({
+        where: {
+          product_id: req.params.id
+        },
+      });
+    })
+    .then((productTags) => {
+      //list of current tagIds
+      const productTagIds = productTags.map(({
+        tag_id
+      }) => tag_id);
+      //filtered list of new tagIds
+      const newProductTags = req.body.tagIds
+        .filter((tag_id) => !productTagIds.includes(tag_id))
+        .map((tag_id) => {
+          return {
+            product_id: req.params.id,
+            tag_id,
+          };
+        });
+      // product tags to be removed
+      const productTagsToRemove = productTags
+        .filter(({
+          tag_id
+        }) => !req.body.tagIds.includes(tag_id))
+        .map(({
+          id
+        }) => id);
+      // destroy the productTagsToRemove, bulkCreate the new product tags
+      return Promise.all([
+        ProductTag.destroy({
+          where: {
+            id: productTagsToRemove
+          }
+        }),
+        ProductTag.bulkCreate(newProductTags),
+      ]);
+    })
+    .then((updatedProductTags) => res.json(updatedProductTags))
+    .catch((err) => {
+      res.status(500).json(err)
+    });
 });
 
 router.delete('/:id', async (req, res) => {
